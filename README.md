@@ -6,5 +6,4 @@ Just open the BakkesMod settings pressing *F2*, go to *Plugins* and select *Spee
 
 ![image](https://github.com/Sauleteh/speed-control/assets/22859905/7e669cf7-3a6d-46cc-9b55-ef8dcde54ce3)
 
-From there, you can: enable/disable the plugin, change the max speed, the acceleration and the gravity. Resetting the values will change them to the default game settings.<br/>
-If you double click a slider, you can write the values you want. There is no limit on the values but be warned that extremely high values can sent you to another world.
+From there, you can: enable/disable the plugin, change the maximum speed, the acceleration and the gravity. Resetting the values will change them to the default game settings. If you double click a slider, you can write the values you want. There is no limit on the values but be warned that extremely high values can send you to another world.
