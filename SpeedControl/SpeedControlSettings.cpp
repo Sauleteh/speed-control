@@ -26,12 +26,24 @@ void SpeedControl::RenderSettings() {
 
 	// Slider max speed
 	int maxSpeed = maxSpeedCvar.getIntValue();
-	if (ImGui::DragInt("Max speed", &maxSpeed, 1.0f, 1, INT_MAX)) {
+	if (ImGui::DragInt("Max speed", &maxSpeed, 2.0f, 1, INT_MAX)) {
 		maxSpeedCvar.setValue(maxSpeed);
 	}
 	if (ImGui::IsItemHovered()) {
-		std::string hoverText = "Max speed: " + std::to_string(maxSpeed);
+		std::string hoverText = "Max speed: " + std::to_string(maxSpeed*0.036f) + " km/h";
 		ImGui::SetTooltip(hoverText.c_str());
+	}
+
+	// Checkbox invertir gravity
+	ImGui::SameLine();
+	CVarWrapper infiniteSpeedCvar = cvarManager->getCvar("infiniteSpeed_enabled");
+	if (!infiniteSpeedCvar) return;
+	bool infiniteSpeed = infiniteSpeedCvar.getBoolValue();
+	if (ImGui::Checkbox("Infinite", &infiniteSpeed)) {
+		infiniteSpeedCvar.setValue(infiniteSpeed);
+	}
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("At the speed of light, without limits!");
 	}
 
 	// Botón reset acceleration
@@ -46,7 +58,7 @@ void SpeedControl::RenderSettings() {
 
 	// Slider acceleration
 	float acceleration = accelerationCvar.getFloatValue();
-	if (ImGui::DragFloat("Acceleration", &acceleration, 0.01f, 0.5f, FLT_MAX)) {
+	if (ImGui::DragFloat("Acceleration", &acceleration, 0.01f, 0.1f, FLT_MAX)) {
 		accelerationCvar.setValue(acceleration);
 	}
 	if (ImGui::IsItemHovered()) {
@@ -66,11 +78,23 @@ void SpeedControl::RenderSettings() {
 
 	// Slider gravity
 	int gravity = gravityCvar.getIntValue();
-	if (ImGui::DragInt("Gravity", &gravity, 1.0f, -INT_MAX, -1)) {
+	if (ImGui::DragInt("Gravity", &gravity, 1.0f, 1, INT_MAX)) {
 		gravityCvar.setValue(gravity);
 	}
 	if (ImGui::IsItemHovered()) {
 		std::string hoverText = "Gravity: " + std::to_string(gravity);
 		ImGui::SetTooltip(hoverText.c_str());
+	}
+
+	// Checkbox invertir gravity
+	ImGui::SameLine();
+	CVarWrapper gInvertedCvar = cvarManager->getCvar("gInverted_enabled");
+	if (!gInvertedCvar) return;
+	bool gravInverted = gInvertedCvar.getBoolValue();
+	if (ImGui::Checkbox("Inverted", &gravInverted)) {
+		gInvertedCvar.setValue(gravInverted);
+	}
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Invert the gravity");
 	}
 }

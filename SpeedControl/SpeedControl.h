@@ -8,7 +8,7 @@
 
 constexpr auto DEFAULT_MAXSPEED = 2300;
 constexpr auto DEFAULT_ACCELERATION = 1.0f;
-constexpr auto DEFAULT_GRAVITY = -650;
+constexpr auto DEFAULT_GRAVITY = 650;
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
