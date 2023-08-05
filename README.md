@@ -1,6 +1,8 @@
 # Speed Control Plugin
 A plugin made to transform the default experience of Rocket League into a racing experience, adjusting the max speed you can get using the boost, the acceleration of the boost and the gravity that affects the car to play custom maps that were made to race. Recommended the plugin <a href="https://bakkesplugins.com/plugins/view/34">First Person</a> to get a better experience and <a href="https://bakkesplugins.com/plugins/view/73">Speedometer</a> to get the car speed.
 
+You can download the plugin <a href="https://bakkesplugins.com/plugins/view/400">here</a>.
+
 ## How to use
 Just open the BakkesMod settings pressing *F2*, go to *Plugins* and select *SpeedControl*:
 
