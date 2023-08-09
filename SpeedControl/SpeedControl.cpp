@@ -151,13 +151,10 @@ void SpeedControl::onLoad()
 				!gameWrapper->GetLocalCar().GetInput().HoldingBoost &&
 				gameWrapper->GetLocalCar().IsOnGround())
 			{
-				// vel * multiplier * 0.525 (no puede depender del límite)
-				if (infiniteBaseSpeedLimit) gameWrapper->GetLocalCar().SetVelocity(gameWrapper->GetLocalCar().GetVelocity() * baseSpeedMultiplier * 0.525f);
+				// vel * multiplier (no puede depender del límite)
+				if (infiniteBaseSpeedLimit) gameWrapper->GetLocalCar().SetVelocity(gameWrapper->GetLocalCar().GetVelocity() * baseSpeedMultiplier);
 				// vel * ((max(0.0, (1 - vel / limit) / 10) * (multiplier - 1)) + 1)
 				else gameWrapper->GetLocalCar().SetVelocity(gameWrapper->GetLocalCar().GetVelocity() * ((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / baseSpeedLimit) / 10) * (baseSpeedMultiplier - 1)) + 1));
-				
-				if (infiniteBaseSpeedLimit) LOG(std::to_string(baseSpeedMultiplier * 0.525f));
-				else LOG(std::to_string((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / baseSpeedLimit) / 10) * (baseSpeedMultiplier - 1)) + 1));
 			}
 		}
 

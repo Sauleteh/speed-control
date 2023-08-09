@@ -193,11 +193,11 @@ void SpeedControl::RenderSettings()
 
 		// Slider base speed multiplier
 		float baseSpeedMultiplier = baseSpeedMultiplierCvar.getFloatValue();
-		if (ImGui::DragFloat("Base speed multiplier", &baseSpeedMultiplier, 0.01f, 0.1f, FLT_MAX, "%.2f")) {
+		if (ImGui::DragFloat("Base speed multiplier", &baseSpeedMultiplier, 0.0001f, 0.1f, FLT_MAX, "%.4f")) {
 			baseSpeedMultiplierCvar.setValue(baseSpeedMultiplier);
 		}
 		if (ImGui::IsItemHovered()) {
-			std::string hoverText = "Base speed multiplier: " + std::format("{:.2f}", baseSpeedMultiplier);
+			std::string hoverText = "Base speed multiplier: " + std::format("{:.4f}", baseSpeedMultiplier);
 			ImGui::SetTooltip(hoverText.c_str());
 		}
 
@@ -252,7 +252,7 @@ void SpeedControl::RenderSettings()
 		ImGui::TextWrapped("- Base speed multiplier: Increase the speed of the car without using the boost. The extra speed you get decreases as the car gets"
 							" close to the base speed limit (inversely proportional to the speed). When you reach the limit, the car will stop getting extra"
 							" speed. If the base speed limit is infinite, the extra speed will be constant, therefore, the multiplier will work internally"
-							" different than before.");
+							" different than before. Values below 1 make the car slower.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Base speed limit: Maximum speed you can get without using the boost. If the general maximum speed is lower than this value, the"
 							" car will never reach this value so be sure to change the maximum speed too if you are going to use super high speeds without boost.");
