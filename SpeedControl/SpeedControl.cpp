@@ -30,6 +30,7 @@ float carScale = DEFAULT_CARSCALE;
 int autoAcceleration = DEFAULT_AUTOACCELERATION;
 bool flyModeAutoAcc = false;
 bool keyboardMouseAutoAcc = false;
+int autoAccAddSub = DEFAULT_AUTOACCADDSUB;
 
 void SpeedControl::onLoad()
 {
@@ -152,6 +153,11 @@ void SpeedControl::onLoad()
 		keyboardMouseAutoAcc = cvar.getBoolValue();
 	});
 
+	cvarManager->registerCvar("speedcontrol_auto_acceleration_addition_subtraction", std::to_string(DEFAULT_AUTOACCADDSUB), "Auto acceleration addition and subtraction", false, true, 0, false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		autoAccAddSub = cvar.getIntValue();
+	});
+
 
 
 	// Este hook ocurre después de reiniciar el coche ya sea manualmente o automáticamente
@@ -186,12 +192,34 @@ void SpeedControl::onLoad()
 
 			if (autoAcceleration != DEFAULT_AUTOACCELERATION)
 			{
-				if (!keyboardMouseAutoAcc)
+				if (keyboardMouseAutoAcc)
 				{
-					if (autoAccState == AutoAccState::Disabled && gameWrapper->GetLocalCar().GetInput().Throttle != 0) autoAccState = AutoAccState::PressEnable;
-					else if (autoAccState == AutoAccState::PressEnable && gameWrapper->GetLocalCar().GetInput().Throttle == 0) autoAccState = AutoAccState::ReleaseEnable;
-					else if (autoAccState == AutoAccState::ReleaseEnable && gameWrapper->GetLocalCar().GetInput().Throttle != 0) autoAccState = AutoAccState::PressDisable;
-					else if (autoAccState == AutoAccState::PressDisable && gameWrapper->GetLocalCar().GetInput().Throttle == 0) autoAccState = AutoAccState::Disabled;
+					if (gameWrapper->GetLocalCar().IsOnGround())
+					{
+						if (autoAccState == AutoAccState::Disabled && gameWrapper->GetLocalCar().GetInput().HoldingBoost != 0) autoAccState = AutoAccState::PressEnable;
+						else if (autoAccState == AutoAccState::PressEnable && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0) autoAccState = AutoAccState::ReleaseEnable;
+						else if (autoAccState == AutoAccState::ReleaseEnable && gameWrapper->GetLocalCar().GetInput().HoldingBoost != 0) autoAccState = AutoAccState::PressDisable;
+						else if (autoAccState == AutoAccState::PressDisable && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0) autoAccState = AutoAccState::Disabled;
+						
+						if (autoAccAddSub != DEFAULT_AUTOACCADDSUB && autoAccState != AutoAccState::Disabled && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0)
+						{
+							if (gameWrapper->GetLocalCar().GetInput().Throttle > 0) cvarManager->getCvar("speedcontrol_auto_acceleration").setValue(autoAcceleration += autoAccAddSub);
+							else if (gameWrapper->GetLocalCar().GetInput().Throttle < 0) cvarManager->getCvar("speedcontrol_auto_acceleration").setValue(autoAcceleration -= autoAccAddSub);
+						}
+					}
+					else if (!gameWrapper->GetLocalCar().IsOnGround() && flyModeAutoAcc)
+					{
+						if (autoAccState == AutoAccState::Disabled && gameWrapper->GetLocalCar().GetInput().HoldingBoost != 0 && gameWrapper->GetLocalCar().GetInput().Jump != 0) autoAccState = AutoAccState::PressEnable;
+						else if (autoAccState == AutoAccState::PressEnable && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0 && gameWrapper->GetLocalCar().GetInput().Jump == 0) autoAccState = AutoAccState::ReleaseEnable;
+						else if (autoAccState == AutoAccState::ReleaseEnable && gameWrapper->GetLocalCar().GetInput().HoldingBoost != 0 && gameWrapper->GetLocalCar().GetInput().Jump != 0) autoAccState = AutoAccState::PressDisable;
+						else if (autoAccState == AutoAccState::PressDisable && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0 && gameWrapper->GetLocalCar().GetInput().Jump == 0) autoAccState = AutoAccState::Disabled;
+					
+						if (autoAccAddSub != DEFAULT_AUTOACCADDSUB && autoAccState != AutoAccState::Disabled)
+						{
+							if (gameWrapper->GetLocalCar().GetInput().HoldingBoost != 0) cvarManager->getCvar("speedcontrol_auto_acceleration").setValue(autoAcceleration += autoAccAddSub);
+							else if (gameWrapper->GetLocalCar().GetInput().Jump != 0) cvarManager->getCvar("speedcontrol_auto_acceleration").setValue(autoAcceleration -= autoAccAddSub);
+						}
+					}
 				}
 				else
 				{
@@ -199,6 +227,12 @@ void SpeedControl::onLoad()
 					else if (autoAccState == AutoAccState::PressEnable && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0) autoAccState = AutoAccState::ReleaseEnable;
 					else if (autoAccState == AutoAccState::ReleaseEnable && gameWrapper->GetLocalCar().GetInput().HoldingBoost != 0) autoAccState = AutoAccState::PressDisable;
 					else if (autoAccState == AutoAccState::PressDisable && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0) autoAccState = AutoAccState::Disabled;
+
+					if (autoAccAddSub != DEFAULT_AUTOACCADDSUB && autoAccState != AutoAccState::Disabled && gameWrapper->GetLocalCar().GetInput().HoldingBoost == 0)
+					{
+						if (gameWrapper->GetLocalCar().GetInput().Throttle > 0) cvarManager->getCvar("speedcontrol_auto_acceleration").setValue(autoAcceleration += autoAccAddSub);
+						else if (gameWrapper->GetLocalCar().GetInput().Throttle < 0) cvarManager->getCvar("speedcontrol_auto_acceleration").setValue(autoAcceleration -= autoAccAddSub);
+					}
 				}
 
 				if (gameWrapper->GetLocalCar().IsOnGround() && (autoAccState == AutoAccState::ReleaseEnable || autoAccState == AutoAccState::PressDisable))
@@ -228,6 +262,9 @@ void SpeedControl::onLoad()
 			}
 		}
 
+		/*auto inputs = gameWrapper->GetLocalCar().GetInput();
+		LOG("1. " + std::to_string(inputs.HoldingBoost) + " | 2. " + std::to_string(inputs.Pitch) + " | 3. " + std::to_string(inputs.Roll)
+			+ " | 4. " + std::to_string(inputs.Handbrake) + " | 5. " + std::to_string(inputs.Jump) + " | 6. " + std::to_string(inputs.Throttle));*/
 		//LOG(std::to_string(gameWrapper->GetLocalCar().GetInput().HoldingBoost) + "|" + std::to_string(gameWrapper->GetLocalCar().GetInput().ActivateBoost));
 		//LOG(std::to_string(gameWrapper->GetLocalCar().GetVelocity().magnitude()));
 		//LOG(std::to_string(((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / baseSpeedLimit) / 10) * (baseSpeedMultiplier - 1)) * std::abs(gameWrapper->GetLocalCar().GetInput().Throttle) + 1)) + " | " + std::to_string(((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / baseSpeedLimit) / 10) * (baseSpeedMultiplier - 1)) + 1)));

@@ -24,6 +24,7 @@ constexpr auto DEFAULT_BRAKINGFORCEMULTIPLIER = 1.0f;
 // Misc
 constexpr auto DEFAULT_CARSCALE = 1.0f;
 constexpr auto DEFAULT_AUTOACCELERATION = 0;
+constexpr auto DEFAULT_AUTOACCADDSUB = 0;
 // Manual transmission
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);

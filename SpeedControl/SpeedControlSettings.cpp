@@ -357,7 +357,7 @@ void SpeedControl::RenderSettings()
 			saveConfig();
 		}
 		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("UP, DOWN, L1, R1, L1, RIGHT, LEFT, L1, LEFT");
+			ImGui::SetTooltip("'UP, DOWN, L1, R1, L1, RIGHT, LEFT, L1, LEFT'");
 		}
 		
 		// Checkbox auto acceleration with keyboard and mouse
@@ -370,7 +370,29 @@ void SpeedControl::RenderSettings()
 			saveConfig();
 		}
 		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Activate auto acceleration using the boost");
+			ImGui::SetTooltip("Activate keyboard and mouse mode");
+		}
+
+		// Botón reset auto acceleration addition and subtraction
+		CVarWrapper autoAccAddSubCvar = cvarManager->getCvar("speedcontrol_auto_acceleration_addition_subtraction");
+		if (!autoAccAddSubCvar) return;
+		ImGui::PushID(13);
+		if (ImGui::Button("Reset")) {
+			autoAccAddSubCvar.setValue(DEFAULT_AUTOACCADDSUB);
+			saveConfig();
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+
+		// Slider auto acceleration addition and subtraction
+		int autoAccelerationAddSub = autoAccAddSubCvar.getIntValue();
+		if (ImGui::DragInt("Auto acceleration addition and subtraction", &autoAccelerationAddSub, 1.0f, 0, INT_MAX)) {
+			autoAccAddSubCvar.setValue(autoAccelerationAddSub);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			std::string hoverText = "Auto acceleration add/sub: " + std::to_string(autoAccelerationAddSub);
+			ImGui::SetTooltip(hoverText.c_str());
 		}
 
 		// Botón reset gráfica de velocidad
@@ -414,17 +436,33 @@ void SpeedControl::RenderSettings()
 		sprintf(overlay, "Average speed: %f km/h\nMax. speed reached: %f km/h", averageVel, maxVel);
 		ImGui::PlotLines("Speed graph", velocidades, IM_ARRAYSIZE(velocidades), velocidadesIndice+1, overlay, 0.0f, heightGraph, ImVec2(0, 180.0f));
 
+		// Transmisión manual
+		/*static int value = 1;
+		static int maxValue = 4000;
+		if (value == maxValue) maxValue += 9;
+		
+		ImGui::VSliderInt("##v", ImVec2(36, 180), &value, 1, maxValue, "");
+		if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+			std::string hoverText = "1st: " + std::to_string(value * 0.036f) + " km/h (" + std::to_string(value) + ")";
+			ImGui::SetTooltip(hoverText.c_str());
+		}*/
+
 		// Texto
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Car scale: The size of the car is multiplied by this value. It can be useful if the track is oversized or undersized."
 							" When this value change, the car will be respawned.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Auto acceleration: If this value is greater than 0, the speed of the car will be the indicated by this value continuously."
-							" To enable it, press the acceleration input one time to go forwards (or press the brake input to go backwards). To disable"
-							" it, press one of the two inputs again. It's useful when you only want to use one hand or want to drive calmly. Remember to"
-							" change the general maximum speed if you want more than 2300uu. The fly mode will give you continuous speed when you fly too,"
-							" just jump while lowering the rear of the car to get off the ground. Have you ever fly backwards? The K&M switches the activation"
-							" input to the boost activation to be able to fly with keyboard and mouse.");
+							" To enable/disable it, press the boost input (works going backwards too). It's useful when you only want to use one hand or"
+							" want to drive calmly. Remember to change the general maximum speed if you want more than 2300uu. The fly mode will give you"
+							" continuous speed when you fly too, just jump while lowering the rear of the car to get off the ground. Have you ever fly"
+							" backwards? The K&M mode will change some inputs to have a better experience with this mechanic using keyboard and mouse."
+							" In this mode, you will need to press boost and jump input at the same time to enable/disable this while you are in air.");
+		ImGui::Spacing();
+		ImGui::TextWrapped("- Auto acceleration addition and subtraction: Amount of speed that you add/subtract when pressing the respective input. If this"
+							" value is set to 0, you can only change auto acceleration manually without inputs. To increase the auto acceleration, press the"
+							" acceleration input and to decrease it, press the brake input. If you have K&M and fly mode at the same time, this inputs will"
+							" change: press boost input to increase the value and press jump input to decrease it.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Speed graph: a graphical interface where you can see, in addition to the speed reached over time, the average and maximum speed."
 							" If you put the mouse over the graph line, you can see the speed you had in that moment. Disable the plugin to stop the movement"
