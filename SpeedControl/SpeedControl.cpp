@@ -31,6 +31,8 @@ int autoAcceleration = DEFAULT_AUTOACCELERATION;
 bool flyModeAutoAcc = false;
 bool keyboardMouseAutoAcc = false;
 int autoAccAddSub = DEFAULT_AUTOACCADDSUB;
+int manualTransmissionGears[DEFAULT_NUMBEROFGEARS] = { DEFAULT_MANUALTRANSMISSIONGEAR };
+bool destroyBallsAlways = false;
 
 void SpeedControl::onLoad()
 {
@@ -158,12 +160,33 @@ void SpeedControl::onLoad()
 		autoAccAddSub = cvar.getIntValue();
 	});
 
+	for (int i = 0; i < DEFAULT_NUMBEROFGEARS; i++)
+	{
+		cvarManager->registerCvar("speedcontrol_manual_transmission_" + std::to_string(i), std::to_string(DEFAULT_MANUALTRANSMISSIONGEAR), "Manual transmission gear " + std::to_string(i), false, true, 0, false)
+			.addOnValueChanged([this, i](std::string oldValue, CVarWrapper cvar) {
+			manualTransmissionGears[i] = cvar.getIntValue();
+		});
+	}
+
+	cvarManager->registerCvar("speedcontrol_destroy_balls_always", "0", "Destroy always the balls", false, true, 0, true, 1)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		destroyBallsAlways = cvar.getBoolValue();
+	});
 
 
 	// Este hook ocurre después de reiniciar el coche ya sea manualmente o automáticamente
-	gameWrapper->HookEvent("Function TAGame.Car_TA.EventLanded", [this](std::string eventName) {
+	gameWrapper->HookEvent("Function TAGame.GFxNameplatesManager_TA.SetPlayerData", [this](std::string eventName) {
 		gameWrapper->Execute([this](GameWrapper* gw) {
 			updateConfig(-1);
+		});
+	});
+
+	// Este hook ocurre cuando se spawnea un balón
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.AddGameBall", [this](std::string eventName) {
+		gameWrapper->Execute([this](GameWrapper* gw) {
+			if (pluginEnabled && destroyBallsAlways && !gameWrapper->GetCurrentGameState().IsNull() && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
+				gameWrapper->GetCurrentGameState().DestroyBalls();
+			}
 		});
 	});
 
@@ -261,7 +284,7 @@ void SpeedControl::onLoad()
 				gameWrapper->GetLocalCar().SetVelocity(gameWrapper->GetLocalCar().GetVelocity() / (brakingForceMultiplier - (brakingForceMultiplier - 1) + ((brakingForceMultiplier - 1) * std::abs(gameWrapper->GetLocalCar().GetInput().Throttle))));
 			}
 		}
-
+		
 		/*auto inputs = gameWrapper->GetLocalCar().GetInput();
 		LOG("1. " + std::to_string(inputs.HoldingBoost) + " | 2. " + std::to_string(inputs.Pitch) + " | 3. " + std::to_string(inputs.Roll)
 			+ " | 4. " + std::to_string(inputs.Handbrake) + " | 5. " + std::to_string(inputs.Jump) + " | 6. " + std::to_string(inputs.Throttle));*/

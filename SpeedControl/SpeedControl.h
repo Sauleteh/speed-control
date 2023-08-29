@@ -25,7 +25,8 @@ constexpr auto DEFAULT_BRAKINGFORCEMULTIPLIER = 1.0f;
 constexpr auto DEFAULT_CARSCALE = 1.0f;
 constexpr auto DEFAULT_AUTOACCELERATION = 0;
 constexpr auto DEFAULT_AUTOACCADDSUB = 0;
-// Manual transmission
+constexpr auto DEFAULT_MANUALTRANSMISSIONGEAR = 0;
+constexpr auto DEFAULT_NUMBEROFGEARS = 8;
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
@@ -36,7 +37,13 @@ class SpeedControl: public BakkesMod::Plugin::BakkesModPlugin, public SettingsWi
 	void updateConfig(int id);
 	bool canApplyAttributes();
 	void saveConfig();
+	int currentNumberOfBalls();
 
 public:
 	void RenderSettings() override;
 };
+
+/* TODO:
+* - Gravedad inteligente: La gravedad es normal cuando estás tocando el suelo. Si ya no tocas el suelo, aplicar más gravedad cuanto más tiempo estés sin tocar el suelo.
+* - Cambio manual: Hacer uso de DPad_UP y DPad_DOWN para cambiar de marchas
+*/

@@ -436,16 +436,64 @@ void SpeedControl::RenderSettings()
 		sprintf(overlay, "Average speed: %f km/h\nMax. speed reached: %f km/h", averageVel, maxVel);
 		ImGui::PlotLines("Speed graph", velocidades, IM_ARRAYSIZE(velocidades), velocidadesIndice+1, overlay, 0.0f, heightGraph, ImVec2(0, 180.0f));
 
-		// Transmisión manual
-		/*static int value = 1;
-		static int maxValue = 4000;
-		if (value == maxValue) maxValue += 9;
-		
-		ImGui::VSliderInt("##v", ImVec2(36, 180), &value, 1, maxValue, "");
-		if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
-			std::string hoverText = "1st: " + std::to_string(value * 0.036f) + " km/h (" + std::to_string(value) + ")";
-			ImGui::SetTooltip(hoverText.c_str());
-		}*/
+		// Botón reset transmisión manual
+		ImGui::Spacing();
+		std::vector<CVarWrapper> gears;
+		static int maxGearValue = 4000;
+		for (int i = 0; i < DEFAULT_NUMBEROFGEARS; i++)
+		{
+			gears.push_back(cvarManager->getCvar("speedcontrol_manual_transmission_" + std::to_string(i)));
+			if (!gears.at(i)) return;
+		}
+		ImGui::PushID(14);
+		if (ImGui::Button("Reset")) {
+			for (int i = 0; i < DEFAULT_NUMBEROFGEARS; i++) gears.at(i).setValue(DEFAULT_MANUALTRANSMISSIONGEAR);
+			maxGearValue = 4000;
+			saveConfig();
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+
+		// Sliders transmisión manual
+		int gearValues[DEFAULT_NUMBEROFGEARS];
+		for (int i = 0; i < DEFAULT_NUMBEROFGEARS; i++)
+		{
+			gearValues[i] = gears.at(i).getIntValue();
+			if (gearValues[i] == maxGearValue) maxGearValue += 9;
+
+			ImGui::PushID(i);
+			if (ImGui::VSliderInt(i < DEFAULT_NUMBEROFGEARS - 1 ? "##v" : "Manual transmission", ImVec2(36, 180), &gearValues[i], 0, maxGearValue, "%d")) {
+				gears.at(i).setValue(gearValues[i]);
+				saveConfig();
+			}
+			if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+				std::string hoverText = "Gear " + std::to_string(i+1) + ": " + std::to_string(gearValues[i] * 0.036f) + " km/h";
+				ImGui::SetTooltip(hoverText.c_str());
+			}
+			ImGui::PopID();
+
+			if (i < DEFAULT_NUMBEROFGEARS - 1) ImGui::SameLine();
+		}
+
+		// Botón destruir balones
+		ImGui::Spacing();
+		if (ImGui::Button(("Destroy all balls (current number of balls: " + std::to_string(currentNumberOfBalls()) + ")").c_str()))
+		{
+			gameWrapper->Execute([this](GameWrapper* gw) { if (!gameWrapper->GetCurrentGameState().IsNull() && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) gameWrapper->GetCurrentGameState().DestroyBalls(); });
+		}
+
+		// Checkbox destruir balones siempre
+		ImGui::SameLine();
+		CVarWrapper destroyBallsAlwaysCvar = cvarManager->getCvar("speedcontrol_destroy_balls_always");
+		if (!destroyBallsAlwaysCvar) return;
+		bool destroyBallsAlways = destroyBallsAlwaysCvar.getBoolValue();
+		if (ImGui::Checkbox("Destroy always", &destroyBallsAlways)) {
+			destroyBallsAlwaysCvar.setValue(destroyBallsAlways);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("The balls don't exist, at least, while this is enabled");
+		}
 
 		// Texto
 		ImGui::Spacing();
@@ -466,9 +514,22 @@ void SpeedControl::RenderSettings()
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Speed graph: a graphical interface where you can see, in addition to the speed reached over time, the average and maximum speed."
 							" If you put the mouse over the graph line, you can see the speed you had in that moment. Disable the plugin to stop the movement"
-							" of the graph");
+							" of the graph.");
+		ImGui::Spacing();
+		ImGui::TextWrapped("- Manual transmission: Up to 8 gears, like a F1 car. If a gear is set to 0, that gear and subsequent gears will be ignored and"
+							" disabled. Change the gear using the up and down inputs of the directional pad. Before using this mechanic, destroy all balls"
+							" to stop moving the ball with this two inputs.");
+		ImGui::Spacing();
+		ImGui::TextWrapped("- Destroy all balls: As the name suggests, this button will destroy all the balls in the map. Use this when using manual"
+							" transmission. If you want to destroy the balls every time it spawns automatically, check the box 'Destroy always'.");
 
 		ImGui::NewLine();
 		ImGui::TreePop();
 	}
+}
+
+int SpeedControl::currentNumberOfBalls()
+{
+	if (!gameWrapper->GetCurrentGameState().IsNull() && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) return gameWrapper->GetCurrentGameState().GetGameBalls().Count();
+	else return 0;
 }
