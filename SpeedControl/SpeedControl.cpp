@@ -7,6 +7,8 @@ std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 Vector vTorque = { 0, 0, 0 };
 AutoAccState autoAccState = AutoAccState::Disabled;
 Vector impulso = { 0, 0, 0 };
+int marcha = 1; // Marcha actual del coche
+bool marchaCambiada = false; // Variable de utilidad para saber si se ha cambiado la marcha y, por tanto, no cambiar más la marcha hasta que se suelte el input
 
 // Basic
 bool pluginEnabled = false;
@@ -150,7 +152,7 @@ void SpeedControl::onLoad()
 		flyModeAutoAcc = cvar.getBoolValue();
 	});
 
-	cvarManager->registerCvar("speedcontrol_auto_acceleration_keyboard_mouse_enabled", "0", "Changes the activation input of the auto acceleration", false, true, 0, true, 1)
+	cvarManager->registerCvar("speedcontrol_auto_acceleration_keyboard_mouse_enabled", "0", "Changes the inputs of the auto acceleration to use with keyboard and mouse", false, true, 0, true, 1)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
 		keyboardMouseAutoAcc = cvar.getBoolValue();
 	});
@@ -165,12 +167,31 @@ void SpeedControl::onLoad()
 		cvarManager->registerCvar("speedcontrol_manual_transmission_" + std::to_string(i), std::to_string(DEFAULT_MANUALTRANSMISSIONGEAR), "Manual transmission gear " + std::to_string(i), false, true, 0, false)
 			.addOnValueChanged([this, i](std::string oldValue, CVarWrapper cvar) {
 			manualTransmissionGears[i] = cvar.getIntValue();
+			marcha = 1;
 		});
+	}
+
+	inputs["Q"] = { 0, false, "Q" };
+	inputs["E"] = { 0, false, "E" };
+	inputs["XboxTypeS_DPad_Down"] = { 0, false, "DPad_Down" };
+	inputs["XboxTypeS_DPad_Up"] = { 0, false, "DPad_Up" };
+
+	for (const std::pair<const std::string, Input>& input : inputs) { // Registramos los inputs para el cambio de marcha
+		cvarManager->registerCvar(input.first, input.first)
+			.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+			inputs[cvar.getStringValue()].index = gameWrapper->GetFNameIndexByString(cvar.getStringValue());
+		});
+		cvarManager->getCvar(input.first).notify();
 	}
 
 	cvarManager->registerCvar("speedcontrol_destroy_balls_always", "0", "Destroy always the balls", false, true, 0, true, 1)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
 		destroyBallsAlways = cvar.getBoolValue();
+		gameWrapper->Execute([this](GameWrapper* gw) { // Destruimos los balones si se activó la checkbox
+			if (pluginEnabled && destroyBallsAlways && !gameWrapper->GetCurrentGameState().IsNull() && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
+				gameWrapper->GetCurrentGameState().DestroyBalls();
+			}
+		});
 	});
 
 
@@ -283,6 +304,53 @@ void SpeedControl::onLoad()
 			{
 				gameWrapper->GetLocalCar().SetVelocity(gameWrapper->GetLocalCar().GetVelocity() / (brakingForceMultiplier - (brakingForceMultiplier - 1) + ((brakingForceMultiplier - 1) * std::abs(gameWrapper->GetLocalCar().GetInput().Throttle))));
 			}
+
+			if (manualTransmissionGears[0] != DEFAULT_MANUALTRANSMISSIONGEAR)
+			{
+				for (const std::pair<const std::string, Input>& input : inputs) { // Actualizar inputs
+					if (input.second.index > 0) {
+						inputs[input.first].pressed = gameWrapper->IsKeyPressed(input.second.index);
+					}
+				}
+
+				if ((inputs["Q"].pressed || inputs["XboxTypeS_DPad_Down"].pressed) && !marchaCambiada)
+				{
+					if (marcha > -DEFAULT_NUMBEROFGEARS) // Si no se llegó al máximo de marchas...
+					{
+						// Solo reducir la marcha si el coche tiene una siguiente marcha (!= 0)
+						if (marcha <= 0 && manualTransmissionGears[std::abs(marcha)] != DEFAULT_MANUALTRANSMISSIONGEAR) marcha--;
+						else if (marcha > 0) marcha--;
+					}
+					marchaCambiada = true;
+				}
+				else if ((inputs["E"].pressed || inputs["XboxTypeS_DPad_Up"].pressed) && !marchaCambiada)
+				{
+					if (marcha < DEFAULT_NUMBEROFGEARS) // Si no se llegó al máximo de marchas...
+					{
+						// Solo aumentar la marcha si el coche tiene una siguiente marcha (!= 0)
+						if (marcha > 0 && manualTransmissionGears[marcha] != DEFAULT_MANUALTRANSMISSIONGEAR) marcha++;
+						else if (marcha <= 0) marcha++;
+					}
+					marchaCambiada = true;
+				}
+				else if (!inputs["Q"].pressed && !inputs["XboxTypeS_DPad_Down"].pressed && !inputs["E"].pressed && !inputs["XboxTypeS_DPad_Up"].pressed) marchaCambiada = false;
+			
+				// Aplicar velocidad dependiendo de la marcha
+				// vel * ((max(0.0, (1 - vel / limitGear) / 10) * (multiplier - 1)) * abs(throttle) + 1)
+				if (gameWrapper->GetLocalCar().IsOnGround())
+				{
+					if (marcha == 0) gameWrapper->GetLocalCar().SetVelocity(0);
+					else if ((gameWrapper->GetLocalCar().GetInput().Throttle > 0 && gameWrapper->GetLocalCar().GetForwardSpeed() > 0) ||
+						(gameWrapper->GetLocalCar().GetInput().Throttle < 0 && gameWrapper->GetLocalCar().GetForwardSpeed() < 0))
+					{
+						auto vel = gameWrapper->GetLocalCar().GetVelocity() * ((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / manualTransmissionGears[std::abs(marcha) - 1]) / 10) * (baseSpeedMultiplier - 1)) * std::abs(gameWrapper->GetLocalCar().GetInput().Throttle) + 1);
+						gameWrapper->GetLocalCar().SetVelocity(vel.magnitude() > manualTransmissionGears[std::abs(marcha) - 1] ? vel / 1.1f : vel);
+					}
+
+					if (marcha > 0 && gameWrapper->GetLocalCar().GetInput().Throttle < 0 && gameWrapper->GetLocalCar().GetForwardSpeed() < 0) gameWrapper->GetLocalCar().SetVelocity(0);
+					else if (marcha < 0 && gameWrapper->GetLocalCar().GetInput().Throttle > 0 && gameWrapper->GetLocalCar().GetForwardSpeed() > 0) gameWrapper->GetLocalCar().SetVelocity(0);
+				}
+			}
 		}
 		
 		/*auto inputs = gameWrapper->GetLocalCar().GetInput();
@@ -293,6 +361,8 @@ void SpeedControl::onLoad()
 		//LOG(std::to_string(((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / baseSpeedLimit) / 10) * (baseSpeedMultiplier - 1)) * std::abs(gameWrapper->GetLocalCar().GetInput().Throttle) + 1)) + " | " + std::to_string(((std::max(0.0f, (1 - gameWrapper->GetLocalCar().GetVelocity().magnitude() / baseSpeedLimit) / 10) * (baseSpeedMultiplier - 1)) + 1)));
 		//LOG(std::to_string(gameWrapper->GetLocalCar().GetForwardSpeed()) + " | " + std::to_string(gameWrapper->GetLocalCar().GetVelocity().magnitude()));
 	});
+
+	gameWrapper->RegisterDrawable(bind(&SpeedControl::Render, this, std::placeholders::_1));
 }
 
 /// <summary>
@@ -313,3 +383,14 @@ void SpeedControl::updateConfig(int id)
 
 bool SpeedControl::canApplyAttributes() { return (!gameWrapper->GetLocalCar().IsNull() && gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()); }
 void SpeedControl::saveConfig() { gameWrapper->Execute([this](GameWrapper* gw) { cvarManager->executeCommand("writeconfig", false); }); }
+
+void SpeedControl::Render(CanvasWrapper canvas)
+{
+	if (!canApplyAttributes()) return;
+
+	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetPosition(Vector2{0, 0});
+	std::string lGear = "N";
+	if (marcha != 0) lGear = (marcha < 0 ? "R" : "") + std::to_string(std::abs(marcha));
+	canvas.DrawString("Gear: " + lGear);
+}

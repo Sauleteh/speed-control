@@ -517,8 +517,11 @@ void SpeedControl::RenderSettings()
 							" of the graph.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Manual transmission: Up to 8 gears, like a F1 car. If a gear is set to 0, that gear and subsequent gears will be ignored and"
-							" disabled. Change the gear using the up and down inputs of the directional pad. Before using this mechanic, destroy all balls"
-							" to stop moving the ball with this two inputs.");
+							" disabled. This mechanic is activated automatically when the first gear is greater than 0. Change the gear using the up and down"
+							" inputs of the directional pad (or Q and E keys on keyboard). Before using this mechanic, destroy all balls to stop moving the"
+							" ball with the two inputs of the controller. Change the base speed multiplier to get higher speeds without using the boost and"
+							" remember to change the maximum speed of the car too. In this mode you can't go backwards with just braking, you need to put a"
+							" reverse gear and then brake. The neutral gear will put the car on 0 speed.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Destroy all balls: As the name suggests, this button will destroy all the balls in the map. Use this when using manual"
 							" transmission. If you want to destroy the balls every time it spawns automatically, check the box 'Destroy always'.");

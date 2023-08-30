@@ -7,6 +7,7 @@
 #include "version.h"
 
 enum AutoAccState : int { Disabled = 0, PressEnable = 1, ReleaseEnable = 2, PressDisable = 3 };
+struct Input { int index; bool pressed; std::string name; };
 
 // Basic
 constexpr auto DEFAULT_MAXSPEED = 2300;
@@ -41,9 +42,12 @@ class SpeedControl: public BakkesMod::Plugin::BakkesModPlugin, public SettingsWi
 
 public:
 	void RenderSettings() override;
+	void Render(CanvasWrapper canvas);
+	std::map<std::string, Input> inputs;
 };
 
 /* TODO:
 * - Gravedad inteligente: La gravedad es normal cuando estás tocando el suelo. Si ya no tocas el suelo, aplicar más gravedad cuanto más tiempo estés sin tocar el suelo.
-* - Cambio manual: Hacer uso de DPad_UP y DPad_DOWN para cambiar de marchas
+* - Cambio manual: Cambiar el multiplicador para que la velocidad sea penalizada si cambias a la marcha máxima de golpe
+* - Label de marcha actual en pantalla: Poder elegir dónde ponerla y cambiar su color. También añadir un velocímetro que indique si estás al máximo de revoluciones
 */
