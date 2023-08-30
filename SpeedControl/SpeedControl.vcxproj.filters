@@ -34,6 +34,12 @@
     <Filter Include="Plugin\src">
       <UniqueIdentifier>{33ae5c6a-718c-410e-bdb8-9c032f65c710}</UniqueIdentifier>
     </Filter>
+    <Filter Include="data">
+      <UniqueIdentifier>{9554e0af-d5c6-429b-96d9-b21daace6f2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="data\SpeedControl">
+      <UniqueIdentifier>{74e1414b-7f01-4583-a960-647628928f2a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui\imgui.cpp">
@@ -148,5 +154,10 @@
     <ResourceCompile Include="SpeedControl.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\data\SpeedControl\speedometer.png">
+      <Filter>data\SpeedControl</Filter>
+    </Image>
   </ItemGroup>
 </Project>

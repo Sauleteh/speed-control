@@ -362,6 +362,8 @@ void SpeedControl::onLoad()
 		//LOG(std::to_string(gameWrapper->GetLocalCar().GetForwardSpeed()) + " | " + std::to_string(gameWrapper->GetLocalCar().GetVelocity().magnitude()));
 	});
 
+	speedometerImg = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "SpeedControl" / "speedometer.png", false, false);
+	speedometerImg->LoadForCanvas();
 	gameWrapper->RegisterDrawable(bind(&SpeedControl::Render, this, std::placeholders::_1));
 }
 
@@ -386,11 +388,14 @@ void SpeedControl::saveConfig() { gameWrapper->Execute([this](GameWrapper* gw) {
 
 void SpeedControl::Render(CanvasWrapper canvas)
 {
-	if (!canApplyAttributes()) return;
+	if (!canApplyAttributes() || !pluginEnabled) return;
 
 	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(Vector2{0, 0});
 	std::string lGear = "N";
 	if (marcha != 0) lGear = (marcha < 0 ? "R" : "") + std::to_string(std::abs(marcha));
 	canvas.DrawString("Gear: " + lGear);
+
+	canvas.SetPosition(Vector2{ 500, 300 });
+	canvas.DrawTexture(speedometerImg.get(), 1.2f);
 }

@@ -44,6 +44,8 @@ public:
 	void RenderSettings() override;
 	void Render(CanvasWrapper canvas);
 	std::map<std::string, Input> inputs;
+
+	std::shared_ptr<ImageWrapper> speedometerImg;
 };
 
 /* TODO:
