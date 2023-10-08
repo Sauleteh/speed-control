@@ -28,6 +28,9 @@ constexpr auto DEFAULT_AUTOACCELERATION = 0;
 constexpr auto DEFAULT_AUTOACCADDSUB = 0;
 constexpr auto DEFAULT_MANUALTRANSMISSIONGEAR = 0;
 constexpr auto DEFAULT_NUMBEROFGEARS = 8;
+constexpr auto DEFAULT_SPEEDGUIHOR = 0;
+constexpr auto DEFAULT_SPEEDGUIVER = 0;
+constexpr auto DEFAULT_SPEEDGUISCALE = 1.0f;
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
@@ -44,7 +47,6 @@ public:
 	void RenderSettings() override;
 	void Render(CanvasWrapper canvas);
 	std::map<std::string, Input> inputs;
-
 	std::shared_ptr<ImageWrapper> speedometerImg;
 };
 

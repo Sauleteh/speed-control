@@ -475,6 +475,58 @@ void SpeedControl::RenderSettings()
 			if (i < DEFAULT_NUMBEROFGEARS - 1) ImGui::SameLine();
 		}
 
+		// Checkbox activar acelerómetro
+		ImGui::Spacing();
+		CVarWrapper speedometerCvar = cvarManager->getCvar("speedcontrol_speedgui_enable");
+		if (!speedometerCvar) return;
+		bool speedometerActivate = speedometerCvar.getBoolValue();
+		if (ImGui::Checkbox("Activate speedometer GUI", &speedometerActivate)) {
+			speedometerCvar.setValue(speedometerActivate);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("If you want to use manual transmission, you will need this");
+		}
+
+		// Slider posición horizontal del speedometer
+		CVarWrapper speedGuiHorizontalCvar = cvarManager->getCvar("speedcontrol_speedgui_horizontal");
+		if (!speedGuiHorizontalCvar) return;
+		int speedGuiHorizontal = speedGuiHorizontalCvar.getIntValue();
+		if (ImGui::DragInt("Speedometer GUI horizontal position", &speedGuiHorizontal, 1.0f, 0, INT_MAX)) {
+			speedGuiHorizontalCvar.setValue(speedGuiHorizontal);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			std::string hoverText = "Speedometer GUI horizontal position: " + std::to_string(speedGuiHorizontal);
+			ImGui::SetTooltip(hoverText.c_str());
+		}
+
+		// Slider posición vertical del speedometer
+		CVarWrapper speedGuiVerticalCvar = cvarManager->getCvar("speedcontrol_speedgui_vertical");
+		if (!speedGuiVerticalCvar) return;
+		int speedGuiVertical = speedGuiVerticalCvar.getIntValue();
+		if (ImGui::DragInt("Speedometer GUI vertical position", &speedGuiVertical, 1.0f, 0, INT_MAX)) {
+			speedGuiVerticalCvar.setValue(speedGuiVertical);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			std::string hoverText = "Speedometer GUI vertical position: " + std::to_string(speedGuiVertical);
+			ImGui::SetTooltip(hoverText.c_str());
+		}
+
+		// Slider speedometer GUI scale
+		CVarWrapper speedometerGuiScaleCvar = cvarManager->getCvar("speedcontrol_speedgui_scale");
+		if (!speedometerGuiScaleCvar) return;
+		float speedometerGuiScale = speedometerGuiScaleCvar.getFloatValue();
+		if (ImGui::DragFloat("Speedometer GUI scale", &speedometerGuiScale, 0.1f, 0.2f, 5.0f, "%.1f")) {
+			speedometerGuiScaleCvar.setValue(speedometerGuiScale);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			std::string hoverText = "Speedometer GUI scale: " + std::format("{:.1f}", speedometerGuiScale);
+			ImGui::SetTooltip(hoverText.c_str());
+		}
+
 		// Botón destruir balones
 		ImGui::Spacing();
 		if (ImGui::Button(("Destroy all balls (current number of balls: " + std::to_string(currentNumberOfBalls()) + ")").c_str()))
@@ -522,6 +574,9 @@ void SpeedControl::RenderSettings()
 							" ball with the two inputs of the controller. Change the base speed multiplier to get higher speeds without using the boost and"
 							" remember to change the maximum speed of the car too. In this mode you can't go backwards with just braking, you need to put a"
 							" reverse gear and then brake. The neutral gear will put the car on 0 speed.");
+		ImGui::Spacing();
+		ImGui::TextWrapped("- Speedometer GUI: Very useful for manual transmission. It shows the actual gear and throttle of the car. It can be used without"
+							" manual transmission too but it will lose the purpose of this interface.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Destroy all balls: As the name suggests, this button will destroy all the balls in the map. Use this when using manual"
 							" transmission. If you want to destroy the balls every time it spawns automatically, check the box 'Destroy always'.");

@@ -35,6 +35,10 @@ bool keyboardMouseAutoAcc = false;
 int autoAccAddSub = DEFAULT_AUTOACCADDSUB;
 int manualTransmissionGears[DEFAULT_NUMBEROFGEARS] = { DEFAULT_MANUALTRANSMISSIONGEAR };
 bool destroyBallsAlways = false;
+bool speedometerGui = false;
+int speedGuiHorizontal = DEFAULT_SPEEDGUIHOR;
+int speedGuiVertical = DEFAULT_SPEEDGUIVER;
+float speedGuiScale = DEFAULT_SPEEDGUISCALE;
 
 void SpeedControl::onLoad()
 {
@@ -160,6 +164,26 @@ void SpeedControl::onLoad()
 	cvarManager->registerCvar("speedcontrol_auto_acceleration_addition_subtraction", std::to_string(DEFAULT_AUTOACCADDSUB), "Auto acceleration addition and subtraction", false, true, 0, false)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
 		autoAccAddSub = cvar.getIntValue();
+	});
+
+	cvarManager->registerCvar("speedcontrol_speedgui_enable", "0", "Activate the speedometer GUI", false, true, 0, true, 1)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		speedometerGui = cvar.getBoolValue();
+	});
+
+	cvarManager->registerCvar("speedcontrol_speedgui_horizontal", std::to_string(DEFAULT_SPEEDGUIHOR), "Speedometer GUI horizontal position", false, true, 0, false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		speedGuiHorizontal = cvar.getIntValue();
+	});
+
+	cvarManager->registerCvar("speedcontrol_speedgui_vertical", std::to_string(DEFAULT_SPEEDGUIVER), "Speedometer GUI vertical position", false, true, 0, false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		speedGuiVertical = cvar.getIntValue();
+	});
+
+	cvarManager->registerCvar("speedcontrol_speedgui_scale", std::to_string(DEFAULT_SPEEDGUISCALE), "Speedometer GUI scale", false, true, 0.2f, true, 5.0f)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		speedGuiScale = cvar.getFloatValue();
 	});
 
 	for (int i = 0; i < DEFAULT_NUMBEROFGEARS; i++)
@@ -388,14 +412,16 @@ void SpeedControl::saveConfig() { gameWrapper->Execute([this](GameWrapper* gw) {
 
 void SpeedControl::Render(CanvasWrapper canvas)
 {
-	if (!canApplyAttributes() || !pluginEnabled) return;
+	if (!canApplyAttributes() || !pluginEnabled || !speedometerGui) return;
 
-	canvas.SetColor(255, 255, 255, 255);
-	canvas.SetPosition(Vector2{0, 0});
+	canvas.SetPosition(Vector2{ speedGuiHorizontal, speedGuiVertical });
+	canvas.DrawTexture(speedometerImg.get(), speedGuiScale);
+
 	std::string lGear = "N";
 	if (marcha != 0) lGear = (marcha < 0 ? "R" : "") + std::to_string(std::abs(marcha));
-	canvas.DrawString("Gear: " + lGear);
+	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetPosition(Vector2{ speedGuiHorizontal + (int)(speedometerImg.get()->GetSize().X * speedGuiScale / 2) - (int)(7 * (int)lGear.length() * speedGuiScale / 2), speedGuiVertical + (int)(speedometerImg.get()->GetSize().Y * speedGuiScale / 1.5f) }); // 8 es el número de píxeles que ocupa una letra de media
+	canvas.DrawString(lGear, speedGuiScale, speedGuiScale);
 
-	canvas.SetPosition(Vector2{ 500, 300 });
-	canvas.DrawTexture(speedometerImg.get(), 1.2f);
+	// TODO: Dibujar la línea de velocidad
 }
