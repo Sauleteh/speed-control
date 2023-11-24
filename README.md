@@ -1,16 +1,19 @@
 # Speed Control Plugin
 A plugin to easily modify many variables of the car such as: maximum speed, acceleration of the boost, gravity to stick the car to the ground on high speeds, torque to turn more, speed without using the boost, car scale and much more. It's recommended to use the <a href="https://bakkesplugins.com/plugins/view/34">First Person plugin</a> to get a better experience, the <a href="https://bakkesplugins.com/plugins/view/73">Speedometer plugin</a> to get the speed of the car and a racing map to enjoy the high speeds.
 
-You can download the plugin <a href="https://bakkesplugins.com/plugins/view/400">here</a>.</br>
-Note: The plugin still in development so this readme and the plugin page could change in the future.
+You can download the plugin <a href="https://bakkesplugins.com/plugins/view/400">here</a>.
 
 ## How to use
-Just open the BakkesMod settings pressing *F2*, go to *Plugins* and select *SpeedControl*:
+Just open the BakkesMod settings pressing *F2*, go to *Plugins* and select *SpeedControl*.
 
-![speedControl](https://github.com/Sauleteh/speed-control/assets/22859905/8ed875a1-5eb1-4032-98ff-6e874ccc43ab)
+Basic configuration, where you can change maximum speed, boost and gravity:
 
-All the information about the variables is in the plugin and at the moment these are the current variables that you can change:
+![image](https://github.com/Sauleteh/speed-control/assets/22859905/aecdc9e8-43b6-49bc-99ee-1f5de04666b6)
 
-Basic configs: max speed (with infinite option), boost acceleration, gravity (with inverted option)
-Advanced configs: torque, torque progression limit, max angular speed, base speed multiplier, base speed limit (with infinite option) and braking force multiplier
-Misc configs: car scale, auto acceleration (with fly mode option and K&M mode to play it on keyboard and mouse) and speed graph (with average and maximum speed)
+Advanced configuration, with many variables that allow you configure the car as you wish:
+
+![image](https://github.com/Sauleteh/speed-control/assets/22859905/28828693-5543-467a-b85c-756068e10d78)
+
+Miscelaneous configuration, such as car size, manual transmission, speed graph, etc:
+
+![image](https://github.com/Sauleteh/speed-control/assets/22859905/e60225f3-f437-4b6e-a679-36188afe19ba)
