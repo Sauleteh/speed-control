@@ -9,6 +9,9 @@ AutoAccState autoAccState = AutoAccState::Disabled;
 Vector impulso = { 0, 0, 0 };
 int marcha = 1; // Marcha actual del coche
 bool marchaCambiada = false; // Variable de utilidad para saber si se ha cambiado la marcha y, por tanto, no cambiar más la marcha hasta que se suelte el input
+int ticksAireActual = 0; // Número de ticks en los que el coche dejó de tocar el suelo. Para la gravedad dinámica
+int ticksAireAnterior = 0; // Solo cambiar la gravedad dinámica si se necesita, por ello, hay que guardar la anterior gravedad
+int appliedDynamicGravity = DEFAULT_GRAVITY; // La gravedad dinámica que se aplicará
 
 // Basic
 bool pluginEnabled = false;
@@ -17,6 +20,8 @@ bool infiniteSpeed = false;
 float acceleration = DEFAULT_ACCELERATION;
 int gravity = DEFAULT_GRAVITY;
 bool gravityInverted = true;
+bool gravityDynamic = false;
+int dynamicGravityMultiplier = DEFAULT_DYNAMICGRAVITYMULTIPLIER;
 
 // Advanced
 int torque = DEFAULT_TORQUE;
@@ -93,6 +98,19 @@ void SpeedControl::onLoad()
 		gameWrapper->Execute([this](GameWrapper* gw) {
 			updateConfig(3);
 		});
+	});
+
+	cvarManager->registerCvar("speedcontrol_gravity_dynamic_enabled", "0", "Dynamic gravity", false, true, 0, true, 1)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		gravityDynamic = cvar.getBoolValue();
+		appliedDynamicGravity = DEFAULT_GRAVITY;
+		if (gravityDynamic) cvarManager->executeCommand("sv_soccar_gravity " + std::to_string(gravityInverted ? -appliedDynamicGravity : appliedDynamicGravity), false);
+		else { gameWrapper->Execute([this](GameWrapper* gw) { updateConfig(3); }); }
+	});
+
+	cvarManager->registerCvar("speedcontrol_dynamic_gravity_multiplier", std::to_string(DEFAULT_DYNAMICGRAVITYMULTIPLIER), "Dynamic gravity multiplier", false, true, 1, false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+		dynamicGravityMultiplier = cvar.getIntValue();
 	});
 
 
@@ -375,6 +393,16 @@ void SpeedControl::onLoad()
 					else if (marcha < 0 && gameWrapper->GetLocalCar().GetInput().Throttle > 0 && gameWrapper->GetLocalCar().GetForwardSpeed() > 0) gameWrapper->GetLocalCar().SetVelocity(0);
 				}
 			}
+
+			if (gravityDynamic)
+			{
+				ticksAireAnterior = ticksAireActual;
+				if (gameWrapper->GetLocalCar().IsOnGround()) ticksAireActual = 0;
+				else ticksAireActual++;
+				
+				appliedDynamicGravity = DEFAULT_GRAVITY + ticksAireActual * dynamicGravityMultiplier;
+				if (ticksAireActual != ticksAireAnterior) cvarManager->executeCommand("sv_soccar_gravity " + std::to_string(gravityInverted ? -appliedDynamicGravity : appliedDynamicGravity), false);
+			}
 		}
 		
 		/*auto inputs = gameWrapper->GetLocalCar().GetInput();
@@ -399,10 +427,10 @@ void SpeedControl::onLoad()
 void SpeedControl::updateConfig(int id)
 {
 	if (!canApplyAttributes()) return;
-	
+
 	if (id <= 0 || id == 1) cvarManager->executeCommand("sv_freeplay_maxspeed " + (pluginEnabled ? (infiniteSpeed ? "inf" : std::to_string(maxSpeed)) : std::to_string(DEFAULT_MAXSPEED)), true);
 	if (id <= 0 || id == 2) cvarManager->executeCommand("sv_soccar_boostmodifier " + std::to_string(pluginEnabled ? acceleration : DEFAULT_ACCELERATION), false);
-	if (id <= 0 || id == 3) cvarManager->executeCommand("sv_soccar_gravity " + std::to_string(pluginEnabled ? (gravityInverted ? -gravity : gravity) : -DEFAULT_GRAVITY), false);
+	if ((id <= 0 || id == 3) && !gravityDynamic) cvarManager->executeCommand("sv_soccar_gravity " + std::to_string(pluginEnabled ? (gravityInverted ? -gravity : gravity) : -DEFAULT_GRAVITY), false);
 	if (id == -1 && pluginEnabled) gameWrapper->GetLocalCar().SetCarScale(carScale);
 	if (id <= 0 || id == 4) gameWrapper->GetLocalCar().SetMaxAngularSpeed2(pluginEnabled ? maxAngularSpeed : DEFAULT_MAXANGULARSPEED);
 }
@@ -414,14 +442,29 @@ void SpeedControl::Render(CanvasWrapper canvas)
 {
 	if (!canApplyAttributes() || !pluginEnabled || !speedometerGui) return;
 
+	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(Vector2{ speedGuiHorizontal, speedGuiVertical });
 	canvas.DrawTexture(speedometerImg.get(), speedGuiScale);
 
 	std::string lGear = "N";
 	if (marcha != 0) lGear = (marcha < 0 ? "R" : "") + std::to_string(std::abs(marcha));
 	canvas.SetColor(255, 255, 255, 255);
-	canvas.SetPosition(Vector2{ speedGuiHorizontal + (int)(speedometerImg.get()->GetSize().X * speedGuiScale / 2) - (int)(7 * (int)lGear.length() * speedGuiScale / 2), speedGuiVertical + (int)(speedometerImg.get()->GetSize().Y * speedGuiScale / 1.5f) }); // 8 es el número de píxeles que ocupa una letra de media
+	canvas.SetPosition(Vector2{ speedGuiHorizontal + (int)(speedometerImg.get()->GetSize().X * speedGuiScale / 2) - (int)(7 * (int)lGear.length() * speedGuiScale / 2), speedGuiVertical + (int)(speedometerImg.get()->GetSize().Y * speedGuiScale / 1.5f) }); // 7 es el número de píxeles que ocupa una letra de media
 	canvas.DrawString(lGear, speedGuiScale, speedGuiScale);
 
-	// TODO: Dibujar la línea de velocidad
+	canvas.SetColor(0, 0, 0, 255);
+	if (manualTransmissionGears[0] == 0)
+	{
+		canvas.DrawLine(Vector2{ speedGuiHorizontal + (int)((speedometerImg.get()->GetSize().X / 2) * speedGuiScale), // Pos horizontal central
+								 speedGuiVertical + (int)((speedometerImg.get()->GetSize().Y / 1.8f) * speedGuiScale) }, // Pos vertial central
+			Vector2{ speedGuiHorizontal + (int)((speedometerImg.get()->GetSize().X / 2) * speedGuiScale + std::cos(gameWrapper->GetLocalCar().GetForwardSpeed() * CONST_PI_F / 180 / 2 + CONST_PI_F) * (speedometerImg.get()->GetSize().X / 2) * speedGuiScale), // Pos horizontal en el contador
+					 speedGuiVertical + (int)((speedometerImg.get()->GetSize().Y / 1.8f) * speedGuiScale + std::sin(gameWrapper->GetLocalCar().GetForwardSpeed() * CONST_PI_F / 180 / 2 + CONST_PI_F) * (speedometerImg.get()->GetSize().X / 2) * speedGuiScale) }); // Pos vertical en el contador
+	}
+	else
+	{
+		canvas.DrawLine(Vector2{ speedGuiHorizontal + (int)((speedometerImg.get()->GetSize().X / 2) * speedGuiScale), // Pos horizontal central
+								 speedGuiVertical + (int)((speedometerImg.get()->GetSize().Y / 1.8f) * speedGuiScale) }, // Pos vertial central
+			Vector2{ speedGuiHorizontal + (int)((speedometerImg.get()->GetSize().X / 2) * speedGuiScale + std::cos(gameWrapper->GetLocalCar().GetForwardSpeed() / manualTransmissionGears[std::abs(marcha) - 1] * CONST_PI_F + CONST_PI_F) * (speedometerImg.get()->GetSize().X / 2) * speedGuiScale), // Pos horizontal en el contador
+					 speedGuiVertical + (int)((speedometerImg.get()->GetSize().Y / 1.8f) * speedGuiScale + std::sin(gameWrapper->GetLocalCar().GetForwardSpeed() / manualTransmissionGears[std::abs(marcha) - 1] * CONST_PI_F + CONST_PI_F) * (speedometerImg.get()->GetSize().X / 2) * speedGuiScale) }); // Pos vertical en el contador
+	}
 }

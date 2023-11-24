@@ -110,6 +110,41 @@ void SpeedControl::RenderSettings()
 			ImGui::SetTooltip("Invert the gravity");
 		}
 
+		// Checkbox dynamic gravity
+		ImGui::SameLine();
+		CVarWrapper gDynamicCvar = cvarManager->getCvar("speedcontrol_gravity_dynamic_enabled");
+		if (!gDynamicCvar) return;
+		bool gravDynamic = gDynamicCvar.getBoolValue();
+		if (ImGui::Checkbox("Dynamic", &gravDynamic)) {
+			gDynamicCvar.setValue(gravDynamic);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Dynamic gravity");
+		}
+
+		// Botón reset dynamic gravity multiplier
+		CVarWrapper dynamicGravityMultCvar = cvarManager->getCvar("speedcontrol_dynamic_gravity_multiplier");
+		if (!dynamicGravityMultCvar) return;
+		ImGui::PushID(15);
+		if (ImGui::Button("Reset")) {
+			dynamicGravityMultCvar.setValue(DEFAULT_DYNAMICGRAVITYMULTIPLIER);
+			saveConfig();
+		}
+		ImGui::PopID();
+		ImGui::SameLine();
+
+		// Slider dynamic gravity multiplier
+		int dynamicGravMult = dynamicGravityMultCvar.getIntValue();
+		if (ImGui::DragInt("Dynamic gravity multiplier", &dynamicGravMult, 1.0f, 1, INT_MAX)) {
+			dynamicGravityMultCvar.setValue(dynamicGravMult);
+			saveConfig();
+		}
+		if (ImGui::IsItemHovered()) {
+			std::string hoverText = "Dynamic gravity multiplier: " + std::to_string(dynamicGravMult);
+			ImGui::SetTooltip(hoverText.c_str());
+		}
+
 		// Texto
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Max speed: The maximum linear speed of the car. Depending on the circunstances, it can be good to lower this value.");
@@ -118,8 +153,13 @@ void SpeedControl::RenderSettings()
 							" faster but it can be a bad idea if there are many closed turns in a row.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Gravity: The force that sticks the car to the ground. Higher speeds require higher gravity force to keep the car on the"
-							" track, but this high values make the car slower on uphill slopes so you will need higher acceleration.");
-		
+							" track, but this high values make the car slower on uphill slopes so you will need higher acceleration. Dynamic gravity"
+							" will ignore the adjusted gravity and it will apply more gravity the more you are not on the ground to make sure that the"
+							" car will not fly away and without applying innecesary force, perfect for tracks with a lot of uphill slopes and wall racing.");
+		ImGui::Spacing();
+		ImGui::TextWrapped("- Dynamic gravity multiplier: The number that will multiply the gravity when dynamic gravity is enabled. Higher values will"
+							" apply gravity faster the more you are not on the ground. Use low values if there are jumps and high values if you want to"
+							" stick to the ground as quickly as possible.");
 		ImGui::NewLine();
 		ImGui::TreePop();
 	}
@@ -575,8 +615,9 @@ void SpeedControl::RenderSettings()
 							" remember to change the maximum speed of the car too. In this mode you can't go backwards with just braking, you need to put a"
 							" reverse gear and then brake. The neutral gear will put the car on 0 speed.");
 		ImGui::Spacing();
-		ImGui::TextWrapped("- Speedometer GUI: Very useful for manual transmission. It shows the actual gear and throttle of the car. It can be used without"
-							" manual transmission too but it will lose the purpose of this interface.");
+		ImGui::TextWrapped("- Speedometer GUI: Very useful for manual transmission. It shows the actual gear and throttle of the car. Remember to change the"
+							" gear when the speedometer gets close to the red zone. If use this without manual transmission, the GUI will still work but the"
+							" indicator will go crazy.");
 		ImGui::Spacing();
 		ImGui::TextWrapped("- Destroy all balls: As the name suggests, this button will destroy all the balls in the map. Use this when using manual"
 							" transmission. If you want to destroy the balls every time it spawns automatically, check the box 'Destroy always'.");

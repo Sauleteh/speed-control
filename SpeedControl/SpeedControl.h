@@ -13,6 +13,7 @@ struct Input { int index; bool pressed; std::string name; };
 constexpr auto DEFAULT_MAXSPEED = 2300;
 constexpr auto DEFAULT_ACCELERATION = 1.0f;
 constexpr auto DEFAULT_GRAVITY = 650;
+constexpr auto DEFAULT_DYNAMICGRAVITYMULTIPLIER = 1;
 
 // Advanced
 constexpr auto DEFAULT_TORQUE = 0;
@@ -49,9 +50,3 @@ public:
 	std::map<std::string, Input> inputs;
 	std::shared_ptr<ImageWrapper> speedometerImg;
 };
-
-/* TODO:
-* - Gravedad inteligente: La gravedad es normal cuando estás tocando el suelo. Si ya no tocas el suelo, aplicar más gravedad cuanto más tiempo estés sin tocar el suelo.
-* - Cambio manual: Cambiar el multiplicador para que la velocidad sea penalizada si cambias a la marcha máxima de golpe
-* - Label de marcha actual en pantalla: Poder elegir dónde ponerla y cambiar su color. También añadir un velocímetro que indique si estás al máximo de revoluciones
-*/
